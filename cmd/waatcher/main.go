@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"regexp"
@@ -32,12 +31,12 @@ func main() {
 
 		err = json.Unmarshal([]byte(e.Data), &event)
 		if err != nil {
-			log.Printf("Error: %v\n", err)
+			slog.Error("unable to unmarshal event", slog.Any("error", err))
 			return
 		}
 
 		if updateRegex.Match([]byte(event.Text)) {
-			webhookClient.Send("region updated!")
+			go webhookClient.Send("region updated!")
 			return
 		}
 
