@@ -1,17 +1,14 @@
+builds:
+  - main: ./cmd/v1nage
+    env: 
+    - CGO_ENABLED=0
+
 release:
   # Repo in which the release will be created.
   # Default: extracted from the origin remote URL or empty if its private hosted.
   github:
     owner: user
     name: repo
-
-  # IDs of the archives to use.
-  # Empty means all IDs.
-  #
-  # Default: [].
-  ids:
-    - foo
-    - bar
 
   # If set to true, will not auto-publish the release.
   # Note: all GitHub releases start as drafts while artifacts are uploaded.
