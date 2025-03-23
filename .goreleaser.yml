@@ -81,7 +81,7 @@ release:
   #
   # Default: '{{.Tag}}' ('{{.PrefixedTag}}' on Pro).
   # Templates: allowed.
-  name_template: "{{.ProjectName}}-v{{.Version}} {{.Env.USER}}"
+  name_template: "{{.ProjectName}}-v{{.Version}}"
 
   # You can disable this pipe in order to not create the release on any SCM.
   # Keep in mind that this might also break things that depend on the release
