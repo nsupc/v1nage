@@ -75,7 +75,7 @@ release:
   # - `replace`: replace existing notes
   #
   # Default: `keep-existing`.
-  mode: append
+  mode: keep-existing
 
   # You can change the name of the release.
   #
