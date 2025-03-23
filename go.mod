@@ -1,4 +1,4 @@
-module waatcher
+module v1nage
 
 go 1.24.0
 

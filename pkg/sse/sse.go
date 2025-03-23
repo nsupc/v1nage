@@ -31,7 +31,7 @@ func (s *SSEClient) Subscribe(url string, onEvent sse.EventCallback) error {
 	return nil
 }
 
-func NewClient() *SSEClient {
+func New() *SSEClient {
 	client := SSEClient{
 		client: sse.Client{
 			HTTPClient: &http.Client{},

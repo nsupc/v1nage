@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"context"
-	"errors"
-	"os"
 
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/webhook"
@@ -27,18 +25,13 @@ func (c *WebhookClient) Close() {
 	c.client.Close(context.Background())
 }
 
-func NewClient() (*WebhookClient, error) {
-	webhookId := snowflake.GetEnv("webhook_id")
-	if webhookId == 0 {
-		return nil, errors.New("please set the 'webhook_id environment variable")
+func New(id string, token string) (*WebhookClient, error) {
+	webhookId, err := snowflake.Parse(id)
+	if err != nil {
+		return nil, err
 	}
 
-	webhookToken := os.Getenv("webhook_token")
-	if webhookToken == "" {
-		return nil, errors.New("please set the 'webhook_token' environment variable")
-	}
-
-	client := webhook.New(webhookId, webhookToken)
+	client := webhook.New(webhookId, token)
 
 	wh := WebhookClient{
 		client,
