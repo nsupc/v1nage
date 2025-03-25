@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"v1nage/pkg/eurocore"
+	"v1nage/pkg/ns"
 	"v1nage/pkg/sse"
 	"v1nage/pkg/webhook"
 
@@ -17,7 +18,7 @@ import (
 )
 
 func main() {
-	var region, eurocoreUrl, eurocoreUser, eurocorePassword, webhookId, webhookToken, telegramSender, telegramId, telegramSecret string
+	var region, eurocoreUrl, eurocoreUser, eurocorePassword, webhookId, webhookToken, telegramSender, newWaTelegramId, newWaTelegramSecret, moveTelegramId, moveTelegramSecret string
 
 	flag.StringVar(&region, "region", "", "region to waatch")
 	flag.StringVar(&eurocoreUrl, "url", "", "base url for eurocore instance")
@@ -26,8 +27,10 @@ func main() {
 	flag.StringVar(&webhookId, "webhook-id", "", "discord webhook id")
 	flag.StringVar(&webhookToken, "webhook-token", "", "discord webhook token")
 	flag.StringVar(&telegramSender, "telegram-sender", "", "nation sending telegram")
-	flag.StringVar(&telegramId, "telegram-id", "", "telegram id")
-	flag.StringVar(&telegramSecret, "telegram-secret", "", "telegram secret key")
+	flag.StringVar(&newWaTelegramId, "new-wa-telegram-id", "", "new wa telegram id")
+	flag.StringVar(&newWaTelegramSecret, "new-wa-telegram-secret", "", "new wa telegram secret key")
+	flag.StringVar(&moveTelegramId, "move-telegram-id", "", "move telegram id")
+	flag.StringVar(&moveTelegramSecret, "move-telegram-secret", "", "move telegram secret key")
 
 	flag.Parse()
 
@@ -36,6 +39,9 @@ func main() {
 	waRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
 	// %% prints a % literal, so all of them need to be doubled ;)
 	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, region))
+	moveRegex := regexp.MustCompile(fmt.Sprintf(`^@@(.+)@@ relocated from %%%%.+%%%% to %%%%%s%%%%.?$`, region))
+
+	nsClient := ns.New(eurocoreUser, 5)
 
 	eurocoreClient := eurocore.New(eurocoreUrl, eurocoreUser, eurocorePassword)
 
@@ -71,13 +77,42 @@ func main() {
 			telegram := eurocore.Telegram{
 				Recipient: nationName,
 				Sender:    telegramSender,
-				Id:        telegramId,
-				Secret:    telegramSecret,
+				Id:        newWaTelegramId,
+				Secret:    newWaTelegramSecret,
 				Type:      "standard",
 			}
 
 			go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName))
 			go eurocoreClient.SendTelegram(telegram)
+
+			return
+		}
+
+		matches = moveRegex.FindStringSubmatch(event.Text)
+
+		if len(matches) > 0 {
+			nationName := matches[1]
+
+			nation, err := nsClient.GetNation(nationName)
+			if err != nil {
+				slog.Error("unable to retrieve nation details", slog.Any("error", err))
+				return
+			}
+
+			if nation.WAStatus == "WA Member" {
+				telegram := eurocore.Telegram{
+					Recipient: nationName,
+					Sender:    telegramSender,
+					Id:        moveTelegramId,
+					Secret:    moveTelegramSecret,
+					Type:      "standard",
+				}
+
+				go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName))
+				go eurocoreClient.SendTelegram(telegram)
+			}
+
+			return
 		}
 	})
 }
