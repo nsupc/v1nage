@@ -34,7 +34,8 @@ func main() {
 	region = strings.ReplaceAll(strings.ToLower(region), " ", "_")
 
 	waRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
-	updateRegex := regexp.MustCompile(fmt.Sprintf("^%%%s%% updated.?$", region))
+	// %% prints a % literal, so all of them need to be doubled ;)
+	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, region))
 
 	eurocoreClient := eurocore.New(eurocoreUrl, eurocoreUser, eurocorePassword)
 
