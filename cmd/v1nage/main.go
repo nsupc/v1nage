@@ -82,7 +82,7 @@ func main() {
 				Type:      "standard",
 			}
 
-			go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName))
+			go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (joined wa)", nationName, nationName))
 			go eurocoreClient.SendTelegram(telegram)
 
 			return
@@ -108,7 +108,7 @@ func main() {
 					Type:      "standard",
 				}
 
-				go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName))
+				go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (moved to region)", nationName, nationName))
 				go eurocoreClient.SendTelegram(telegram)
 			}
 
