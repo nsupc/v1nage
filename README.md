@@ -6,7 +6,7 @@ Named in honor of Europeian Honoured Citizen and Former Delegate [Vinage Vinage]
 
 ## Installation (Linux CLI)
 
-1. `mkdir vinage && cd v1nage`: create a directory to store project files and enter it
+1. `mkdir v1nage && cd v1nage`: create a directory to store project files and enter it
 2. `wget https://github.com/nsupc/v1nage/releases/download/0.2.1/v1nage_0.2.1_linux_amd64.tar.gz`: download the v1nage binary. Note that version 0.2.1 was the latest release at the time of writing, please see the [releases](https://github.com/nsupc/v1nage/releases) page for the most updated version of the tool -- you can just copy the URL for the amd64 release.
 3. `tar -xzf v1nage_0.2.1_linux_amd64.tar.gz`: unzip the archive. Again, be sure to use the most recent version number.
 4. `rm v1nage_0.2.1_linux_amd64.tar.gz`: [optional] delete the archive.
