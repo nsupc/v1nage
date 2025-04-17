@@ -1,0 +1,23 @@
+---
+user:
+region:
+limit:
+eurocore:
+  url:
+  username:
+  password:
+webhook:
+  id:
+  token:
+move-telegram:
+  id:
+  secret:
+  author:
+join-telegram:
+  id:
+  secret:
+  author:
+log:
+  level:
+  token:
+  endpoint: 

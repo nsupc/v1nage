@@ -2,70 +2,98 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"regexp"
-	"strings"
 
+	"v1nage/pkg/config"
 	"v1nage/pkg/eurocore"
 	"v1nage/pkg/ns"
 	"v1nage/pkg/sse"
 	"v1nage/pkg/webhook"
 
+	slogbetterstack "github.com/samber/slog-betterstack"
 	gsse "github.com/tmaxmax/go-sse"
 )
 
 func main() {
-	var region, eurocoreUrl, eurocoreUser, eurocorePassword, webhookId, webhookToken, telegramSender, newWaTelegramId, newWaTelegramSecret, moveTelegramId, moveTelegramSecret string
+	var path string
 
-	flag.StringVar(&region, "region", "", "region to waatch")
-	flag.StringVar(&eurocoreUrl, "url", "", "base url for eurocore instance")
-	flag.StringVar(&eurocoreUser, "user", "", "eurocore username")
-	flag.StringVar(&eurocorePassword, "password", "", "eurocore user password")
-	flag.StringVar(&webhookId, "webhook-id", "", "discord webhook id")
-	flag.StringVar(&webhookToken, "webhook-token", "", "discord webhook token")
-	flag.StringVar(&telegramSender, "telegram-sender", "", "nation sending telegram")
-	flag.StringVar(&newWaTelegramId, "new-wa-telegram-id", "", "new wa telegram id")
-	flag.StringVar(&newWaTelegramSecret, "new-wa-telegram-secret", "", "new wa telegram secret key")
-	flag.StringVar(&moveTelegramId, "move-telegram-id", "", "move telegram id")
-	flag.StringVar(&moveTelegramSecret, "move-telegram-secret", "", "move telegram secret key")
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	} else {
+		path = "config.yml"
+	}
 
-	flag.Parse()
+	conf, err := config.ReadConfig(path)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	region = strings.ReplaceAll(strings.ToLower(region), " ", "_")
+	var logger *slog.Logger
+	var logLevel slog.Level
+
+	switch conf.Log.Level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	if conf.Log.Token != "" && conf.Log.Endpoint != "" {
+		logger = slog.New(slogbetterstack.Option{
+			Token:    conf.Log.Token,
+			Endpoint: conf.Log.Endpoint,
+			Level:    logLevel,
+		}.NewBetterstackHandler())
+	} else {
+		logger = slog.Default()
+	}
 
 	waRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
-	// %% prints a % literal, so all of them need to be doubled ;)
-	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, region))
-	moveRegex := regexp.MustCompile(fmt.Sprintf(`^@@(.+)@@ relocated from %%%%.+%%%% to %%%%%s%%%%.?$`, region))
+	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, conf.Region))
+	moveRegex := regexp.MustCompile(fmt.Sprintf(`^@@(.+)@@ relocated from %%%%.+%%%% to %%%%%s%%%%.?$`, conf.Region))
 
-	nsClient := ns.New(eurocoreUser, 5)
+	nsClient := ns.New(conf.User, int(conf.Limit))
 
-	eurocoreClient := eurocore.New(eurocoreUrl, eurocoreUser, eurocorePassword)
+	eurocoreClient := eurocore.New(conf.Eurocore.Url, conf.Eurocore.Username, conf.Eurocore.Password)
 
-	webhookClient, err := webhook.New(webhookId, webhookToken)
+	webhookClient, err := webhook.New(conf.Webhook.Id, conf.Webhook.Token)
 	if err != nil {
-		slog.Error("unable to build webhook client", slog.Any("error", err))
-		os.Exit(1)
+		logger.Error("unable to build webhook client", slog.Any("error", err))
+		return
 	}
 	defer webhookClient.Close()
 
 	sseClient := sse.New()
 
-	happeningsUrl := fmt.Sprintf("https://www.nationstates.net/api/region:%s", region)
-	sseClient.Subscribe(happeningsUrl, func(e gsse.Event) {
+	happeningsUrl := fmt.Sprintf("https://www.nationstates.net/api/region:%s", conf.Region)
+
+	err = sseClient.Subscribe(happeningsUrl, func(e gsse.Event) {
 		event := sse.Event{}
 
 		err = json.Unmarshal([]byte(e.Data), &event)
 		if err != nil {
-			slog.Error("unable to unmarshal event", slog.Any("error", err))
+			logger.Error("unable to unmarshal event", slog.Any("error", err))
 			return
 		}
 
 		if updateRegex.Match([]byte(event.Text)) {
-			go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/region=%s) updated!", region, region))
+			go func() {
+				err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/region=%s) updated!", conf.Region, conf.Region))
+				if err != nil {
+					logger.Error("unable to send webhook", slog.Any("error", err))
+				}
+			}()
+
 			return
 		}
 
@@ -74,16 +102,26 @@ func main() {
 		if len(matches) > 0 {
 			nationName := matches[1]
 
-			telegram := eurocore.Telegram{
-				Recipient: nationName,
-				Sender:    telegramSender,
-				Id:        newWaTelegramId,
-				Secret:    newWaTelegramSecret,
-				Type:      "standard",
-			}
+			go func() {
+				err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (joined wa)", nationName, nationName))
+				if err != nil {
+					logger.Error("unable to send webhook", slog.Any("error", err))
+				}
+			}()
 
-			go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (joined wa)", nationName, nationName))
-			go eurocoreClient.SendTelegram(telegram)
+			if conf.JoinTelegram.Secret != "" {
+				telegram := eurocore.Telegram{
+					Recipient: nationName,
+					Sender:    conf.JoinTelegram.Author,
+					Id:        conf.JoinTelegram.Id,
+					Secret:    conf.JoinTelegram.Secret,
+					Type:      "standard",
+				}
+
+				go eurocoreClient.SendTelegram(telegram)
+			} else {
+				logger.Warn("join telegram not set, skipping")
+			}
 
 			return
 		}
@@ -95,24 +133,37 @@ func main() {
 
 			nation, err := nsClient.GetNation(nationName)
 			if err != nil {
-				slog.Error("unable to retrieve nation details", slog.Any("error", err))
+				logger.Error("unable to retrieve nation details", slog.Any("error", err))
 				return
 			}
 
 			if nation.WAStatus == "WA Member" {
-				telegram := eurocore.Telegram{
-					Recipient: nationName,
-					Sender:    telegramSender,
-					Id:        moveTelegramId,
-					Secret:    moveTelegramSecret,
-					Type:      "standard",
-				}
+				go func() {
+					err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (moved to region)", nationName, nationName))
+					if err != nil {
+						logger.Error("unable to send webhook", slog.Any("error", err))
+					}
+				}()
 
-				go webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (moved to region)", nationName, nationName))
-				go eurocoreClient.SendTelegram(telegram)
+				if conf.MoveTelegram.Secret != "" {
+					telegram := eurocore.Telegram{
+						Recipient: nationName,
+						Sender:    conf.MoveTelegram.Author,
+						Id:        conf.MoveTelegram.Id,
+						Secret:    conf.MoveTelegram.Secret,
+						Type:      "standard",
+					}
+
+					go eurocoreClient.SendTelegram(telegram)
+				} else {
+					logger.Warn("move telegram not set, skipping")
+				}
 			}
 
 			return
 		}
 	})
+	if err != nil {
+		logger.Error("unable to subscribe to happenings", slog.Any("error", err))
+	}
 }
