@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"strings"
 
 	"v1nage/pkg/config"
 	"v1nage/pkg/eurocore"
@@ -58,6 +59,10 @@ func main() {
 		logger = slog.Default()
 	}
 
+	slog.SetDefault(logger)
+
+	logger.Info("starting")
+
 	waRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
 	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, conf.Region))
 	moveRegex := regexp.MustCompile(fmt.Sprintf(`^@@(.+)@@ relocated from %%%%.+%%%% to %%%%%s%%%%.?$`, conf.Region))
@@ -102,8 +107,11 @@ func main() {
 		if len(matches) > 0 {
 			nationName := matches[1]
 
+			nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
+			msg := strings.ReplaceAll(conf.JoinMessage, "$nation", nationLink)
+
 			go func() {
-				err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (joined wa)", nationName, nationName))
+				err = webhookClient.Send(msg)
 				if err != nil {
 					logger.Error("unable to send webhook", slog.Any("error", err))
 				}
@@ -137,9 +145,12 @@ func main() {
 				return
 			}
 
+			nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
+			msg := strings.ReplaceAll(conf.MoveMessage, "$nation", nationLink)
+
 			if nation.WAStatus == "WA Member" {
 				go func() {
-					err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton) (moved to region)", nationName, nationName))
+					err = webhookClient.Send(msg)
 					if err != nil {
 						logger.Error("unable to send webhook", slog.Any("error", err))
 					}
