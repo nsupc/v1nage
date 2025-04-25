@@ -7,23 +7,42 @@ Named in honor of Europeian Honoured Citizen and Former Delegate [Vinage Vinage]
 ## Installation (Linux CLI)
 
 1. `mkdir v1nage && cd v1nage`: create a directory to store project files and enter it
-2. `wget https://github.com/nsupc/v1nage/releases/download/0.2.1/v1nage_0.2.1_linux_amd64.tar.gz`: download the v1nage binary. Note that version 0.2.1 was the latest release at the time of writing, please see the [releases](https://github.com/nsupc/v1nage/releases) page for the most updated version of the tool -- you can just copy the URL for the amd64 release.
-3. `tar -xzf v1nage_0.2.1_linux_amd64.tar.gz`: unzip the archive. Again, be sure to use the most recent version number.
-4. `rm v1nage_0.2.1_linux_amd64.tar.gz`: [optional] delete the archive.
-5. `chmod 500 ./v1nage`: set the binary executable bit.
-6. `nohup ./v1nage [arguments] &`: run the tool disconnected from your terminal session.
-7. `ps -aux`: [optional] ensure that the program is running.
+2. `wget https://github.com/nsupc/v1nage/releases/download/0.3.1/v1nage_0.2.1_linux_amd64.tar.gz`: download the v1nage binary. Note that version 0.3.1 was the latest release at the time of writing, please see the [releases](https://github.com/nsupc/v1nage/releases) page for the most updated version of the tool -- you can just copy the URL for the amd64 release.
+3. `tar -xzf v1nage_0.3.1_linux_amd64.tar.gz`: unzip the archive. Again, be sure to use the most recent version number.
+4. `rm v1nage_0.3.1_linux_amd64.tar.gz`: [optional] delete the archive.
+5. `mv config.yml.template config.yml`: if setting up for the first time, copy the config template to the config file. See [config](#config) for configuration options.
+6. `nano config.yml`: open the config file in a text editor. Fill in the values and save the file.
+7. `chmod 500 ./v1nage`: set the binary executable bit.
+8. `nohup ./v1nage [arguments] &`: run the tool disconnected from your terminal session. See [arguments](#arguments) for available arguments.
+9. `ps -aux`: [optional] ensure that the program is running.
 
-## CLI Flags
+## Config
 
-- --region [string]: region to subscribe to events from
-- --url [string]: base URL for eurocore instance (for sending telegrams)
-- --user [string]: eurocore username
-- --password [string]: eurocore user password
-- --webhook-id [string]: Discord webhook id
-- --webtook-token [string]: Discord webhook token
-- --telegram-sender [string]: nation sending telegrams
-- --new-wa-telegram-id [string]: NS telegram ID for telegram to be sent to new WA joins
-- --new-wa-telegram-secret [string]: NS telegram secret for telegram to be sent to new WA joins
-- --move-telegram-id [string]: NS telegram ID for telegram to be sent to WA nations that move to region
-- --move-telegram-secret [string]: NS telegram secret for telegram to be sent to WA nations that move to region
+- user: NationStates User-Agent
+- region: region to subscribe to events from
+- limit: maximum number of requests to send to NationStates in a 30 second period. 0 < limit < 50
+- eurocore:
+  - url: base URL for eurocore instance
+  - username: eurocore username
+  - password: eurocore user password
+- webhook:
+  - id: Discord webhook id
+  - token: Discord webhook token
+- join-message: message to post to webhook when a nation joins the WA in `region`. Use `$nation` in place of link to nation
+- move-message: message to post to webhook when a WA nation moves to `region`. Use `$nation` in place of link to nation
+- move-telegram:
+  - id: NationStates telegram id for telegram sent to WA nations moving to `region`
+  - secret: NationStates telegram secret for telegram sent to WA nations moving to `region`
+  - author: NationStates nation responsible for sending telegram to WA nations moving to `region`.
+- join-telegram:
+  - id: NationStates telegram id for telegram sent to new WA joins in `region`
+  - secret: NationStates telegram secret for telegram sent to new WA joins in `region`
+  - author: NationStates nation responsible for sending telegram to new WA joins in `region`.
+- log:
+  - level: log level. ["DEBUG", "INFO", "WARN", "ERROR"]
+  - token: BetterStack authorization token
+  - endpoint: BetterStack logging endpoint
+
+## Arguments
+
+- [file]: optional path to configuration file. Defaults to ./config.yml if not set
