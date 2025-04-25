@@ -9,6 +9,8 @@ eurocore:
 webhook:
   id:
   token:
+join-message:
+move-message:
 move-telegram:
   id:
   secret:

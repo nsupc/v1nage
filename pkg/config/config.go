@@ -2,9 +2,10 @@ package config
 
 import (
 	"errors"
-	"github.com/goccy/go-yaml"
 	"os"
 	"strings"
+
+	"github.com/goccy/go-yaml"
 )
 
 type Eurocore struct {
@@ -36,6 +37,8 @@ type Config struct {
 	Limit        uint8    `yaml:"limit"`
 	Eurocore     Eurocore `yaml:"eurocore"`
 	Webhook      Webhook  `yaml:"webhook"`
+	MoveMessage  string   `yaml:"move-message"`
+	JoinMessage  string   `jaml:"join-message"`
 	MoveTelegram Telegram `yaml:"move-telegram"`
 	JoinTelegram Telegram `yaml:"join-telegram"`
 	Log          Log      `yaml:"log"`
@@ -68,6 +71,14 @@ func ReadConfig(path string) (*Config, error) {
 
 	config.Region = strings.ReplaceAll(strings.ToLower(config.Region), " ", "_")
 	config.Log.Level = strings.ToLower(config.Log.Level)
+
+	if config.MoveMessage == "" {
+		config.MoveMessage = "$nation (moved to region)"
+	}
+
+	if config.JoinMessage == "" {
+		config.JoinMessage = "$nation (joined WA)"
+	}
 
 	return config, nil
 }
