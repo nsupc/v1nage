@@ -38,7 +38,7 @@ type Config struct {
 	Eurocore     Eurocore `yaml:"eurocore"`
 	Webhook      Webhook  `yaml:"webhook"`
 	MoveMessage  string   `yaml:"move-message"`
-	JoinMessage  string   `jaml:"join-message"`
+	JoinMessage  string   `yaml:"join-message"`
 	MoveTelegram Telegram `yaml:"move-telegram"`
 	JoinTelegram Telegram `yaml:"join-telegram"`
 	Log          Log      `yaml:"log"`
