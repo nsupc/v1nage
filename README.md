@@ -7,9 +7,9 @@ Named in honor of Europeian Honoured Citizen and Former Delegate [Vinage Vinage]
 ## Installation (Linux CLI)
 
 1. `mkdir v1nage && cd v1nage`: create a directory to store project files and enter it
-2. `wget https://github.com/nsupc/v1nage/releases/download/0.3.1/v1nage_0.2.1_linux_amd64.tar.gz`: download the v1nage binary. Note that version 0.3.1 was the latest release at the time of writing, please see the [releases](https://github.com/nsupc/v1nage/releases) page for the most updated version of the tool -- you can just copy the URL for the amd64 release.
-3. `tar -xzf v1nage_0.3.1_linux_amd64.tar.gz`: unzip the archive. Again, be sure to use the most recent version number.
-4. `rm v1nage_0.3.1_linux_amd64.tar.gz`: [optional] delete the archive.
+2. `wget https://github.com/nsupc/v1nage/releases/download/0.3.3/v1nage_0.3.3_linux_amd64.tar.gz`: download the v1nage binary. Note that version 0.3.1 was the latest release at the time of writing, please see the [releases](https://github.com/nsupc/v1nage/releases) page for the most updated version of the tool -- you can just copy the URL for the amd64 release.
+3. `tar -xzf v1nage_0.3.3_linux_amd64.tar.gz`: unzip the archive. Again, be sure to use the most recent version number.
+4. `rm v1nage_0.3.3_linux_amd64.tar.gz`: [optional] delete the archive.
 5. `mv config.yml.template config.yml`: if setting up for the first time, copy the config template to the config file. See [config](#config) for configuration options.
 6. `nano config.yml`: open the config file in a text editor. Fill in the values and save the file.
 7. `chmod 500 ./v1nage`: set the binary executable bit.
