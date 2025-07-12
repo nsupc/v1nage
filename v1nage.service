@@ -1,0 +1,14 @@
+[Unit]
+Description=v1nage NationStates WA Monitor
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/v1nage /etc/v1nage-config.ym
+Restart=always
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=v1nage
