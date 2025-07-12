@@ -7,7 +7,7 @@ WantedBy=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/v1nage /etc/v1nage-config.ym
+ExecStart=/usr/local/bin/v1nage /etc/v1nage-config.yml
 Restart=always
 StandardOutput=journal
 StandardError=journal
