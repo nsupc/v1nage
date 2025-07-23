@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"os"
 	"regexp"
 	"strings"
 
@@ -15,53 +14,14 @@ import (
 	"v1nage/pkg/sse"
 	"v1nage/pkg/webhook"
 
-	slogbetterstack "github.com/samber/slog-betterstack"
 	gsse "github.com/tmaxmax/go-sse"
 )
 
 func main() {
-	var path string
-
-	if len(os.Args) > 1 {
-		path = os.Args[1]
-	} else {
-		path = "config.yml"
-	}
-
-	conf, err := config.ReadConfig(path)
+	conf, err := config.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	var logger *slog.Logger
-	var logLevel slog.Level
-
-	switch conf.Log.Level {
-	case "debug":
-		logLevel = slog.LevelDebug
-	case "info":
-		logLevel = slog.LevelInfo
-	case "warn":
-		logLevel = slog.LevelWarn
-	case "error":
-		logLevel = slog.LevelError
-	default:
-		logLevel = slog.LevelInfo
-	}
-
-	if conf.Log.Token != "" && conf.Log.Endpoint != "" {
-		logger = slog.New(slogbetterstack.Option{
-			Token:    conf.Log.Token,
-			Endpoint: conf.Log.Endpoint,
-			Level:    logLevel,
-		}.NewBetterstackHandler())
-	} else {
-		logger = slog.Default()
-	}
-
-	slog.SetDefault(logger)
-
-	logger.Info("starting")
 
 	waRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
 	updateRegex := regexp.MustCompile(fmt.Sprintf(`^%%%%%s%%%% updated.?$`, conf.Region))
@@ -73,7 +33,7 @@ func main() {
 
 	webhookClient, err := webhook.New(conf.Webhook.Id, conf.Webhook.Token)
 	if err != nil {
-		logger.Error("unable to build webhook client", slog.Any("error", err))
+		slog.Error("unable to build webhook client", slog.Any("error", err))
 		return
 	}
 	defer webhookClient.Close()
@@ -87,7 +47,7 @@ func main() {
 
 		err = json.Unmarshal([]byte(e.Data), &event)
 		if err != nil {
-			logger.Error("unable to unmarshal event", slog.Any("error", err))
+			slog.Error("unable to unmarshal event", slog.Any("error", err))
 			return
 		}
 
@@ -95,7 +55,7 @@ func main() {
 			go func() {
 				err = webhookClient.Send(fmt.Sprintf("[%s](https://www.nationstates.net/region=%s) updated!", conf.Region, conf.Region))
 				if err != nil {
-					logger.Error("unable to send webhook", slog.Any("error", err))
+					slog.Error("unable to send webhook", slog.Any("error", err))
 				}
 			}()
 
@@ -113,7 +73,7 @@ func main() {
 			go func() {
 				err = webhookClient.Send(msg)
 				if err != nil {
-					logger.Error("unable to send webhook", slog.Any("error", err))
+					slog.Error("unable to send webhook", slog.Any("error", err))
 				}
 			}()
 
@@ -128,7 +88,7 @@ func main() {
 
 				go eurocoreClient.SendTelegram(telegram)
 			} else {
-				logger.Warn("join telegram not set, skipping")
+				slog.Warn("join telegram not set, skipping")
 			}
 
 			return
@@ -141,7 +101,7 @@ func main() {
 
 			nation, err := nsClient.GetNation(nationName)
 			if err != nil {
-				logger.Error("unable to retrieve nation details", slog.Any("error", err))
+				slog.Error("unable to retrieve nation details", slog.Any("error", err))
 				return
 			}
 
@@ -152,7 +112,7 @@ func main() {
 				go func() {
 					err = webhookClient.Send(msg)
 					if err != nil {
-						logger.Error("unable to send webhook", slog.Any("error", err))
+						slog.Error("unable to send webhook", slog.Any("error", err))
 					}
 				}()
 
@@ -167,7 +127,7 @@ func main() {
 
 					go eurocoreClient.SendTelegram(telegram)
 				} else {
-					logger.Warn("move telegram not set, skipping")
+					slog.Warn("move telegram not set, skipping")
 				}
 			}
 
@@ -175,6 +135,6 @@ func main() {
 		}
 	})
 	if err != nil {
-		logger.Error("unable to subscribe to happenings", slog.Any("error", err))
+		slog.Error("unable to subscribe to happenings", slog.Any("error", err))
 	}
 }

@@ -2,10 +2,12 @@ package config
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/goccy/go-yaml"
+	slogbetterstack "github.com/samber/slog-betterstack"
 )
 
 type Eurocore struct {
@@ -44,7 +46,46 @@ type Config struct {
 	Log          Log      `yaml:"log"`
 }
 
-func ReadConfig(path string) (*Config, error) {
+func (c *Config) initLogger() {
+	var logger *slog.Logger
+	var logLevel slog.Level
+
+	switch c.Log.Level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	if c.Log.Token != "" && c.Log.Endpoint != "" {
+		logger = slog.New(slogbetterstack.Option{
+			Token:    c.Log.Token,
+			Endpoint: c.Log.Endpoint,
+			Level:    logLevel,
+		}.NewBetterstackHandler())
+	} else {
+		logger = slog.Default()
+	}
+
+	slog.SetDefault(logger)
+	slog.SetLogLoggerLevel(logLevel)
+}
+
+func Read() (*Config, error) {
+	var path string
+
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	} else {
+		path = "config.yml"
+	}
+
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
