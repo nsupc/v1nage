@@ -6,6 +6,7 @@ require (
 	github.com/disgoorg/disgo v0.18.15
 	github.com/disgoorg/snowflake/v2 v2.0.3
 	github.com/goccy/go-yaml v1.17.1
+	github.com/nsupc/eurogo v0.3.0
 	github.com/samber/slog-betterstack v1.4.2
 	github.com/tmaxmax/go-sse v0.10.0
 )

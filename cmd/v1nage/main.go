@@ -6,14 +6,16 @@ import (
 	"log"
 	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"v1nage/pkg/config"
-	"v1nage/pkg/eurocore"
 	"v1nage/pkg/ns"
 	"v1nage/pkg/sse"
 	"v1nage/pkg/webhook"
 
+	"github.com/nsupc/eurogo/client"
+	"github.com/nsupc/eurogo/telegrams"
 	gsse "github.com/tmaxmax/go-sse"
 )
 
@@ -29,7 +31,7 @@ func main() {
 
 	nsClient := ns.New(conf.User, int(conf.Limit))
 
-	eurocoreClient := eurocore.New(conf.Eurocore.Url, conf.Eurocore.Username, conf.Eurocore.Password)
+	eurocoreClient := client.New(conf.Eurocore.Username, conf.Eurocore.Password, conf.Eurocore.Url)
 
 	webhookClient, err := webhook.New(conf.Webhook.Id, conf.Webhook.Token)
 	if err != nil {
@@ -67,29 +69,41 @@ func main() {
 		if len(matches) > 0 {
 			nationName := matches[1]
 
-			nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
-			msg := strings.ReplaceAll(conf.JoinMessage, "$nation", nationLink)
-
 			go func() {
+				nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
+				msg := strings.ReplaceAll(conf.JoinMessage, "$nation", nationLink)
+
 				err = webhookClient.Send(msg)
 				if err != nil {
 					slog.Error("unable to send webhook", slog.Any("error", err))
 				}
 			}()
 
-			if conf.JoinTelegram.Secret != "" {
-				telegram := eurocore.Telegram{
-					Recipient: nationName,
-					Sender:    conf.JoinTelegram.Author,
-					Id:        conf.JoinTelegram.Id,
-					Secret:    conf.JoinTelegram.Secret,
-					Type:      "standard",
+			go func() {
+				var telegram telegrams.NewTelegram
+
+				if conf.JoinTelegram.Template != "" {
+					tmpl, err := eurocoreClient.GetTemplate(conf.JoinTelegram.Template)
+					if err != nil {
+						slog.Error("unable to retrieve template", slog.Any("error", err))
+						return
+					}
+
+					telegram = telegrams.New(tmpl.Nation, nationName, strconv.Itoa(tmpl.Tgid), tmpl.Key, telegrams.Standard)
+				} else if conf.JoinTelegram.Id != "" {
+					telegram = telegrams.New(conf.JoinTelegram.Author, nationName, conf.JoinTelegram.Id, conf.JoinTelegram.Secret, telegrams.Standard)
+				} else {
+					slog.Warn("join telegram not set, skipping")
+					return
 				}
 
-				go eurocoreClient.SendTelegram(telegram)
-			} else {
-				slog.Warn("join telegram not set, skipping")
-			}
+				err := eurocoreClient.SendTelegram(telegram)
+				if err != nil {
+					slog.Error("unable to send join telegram", slog.Any("error", err))
+				} else {
+					slog.Info("join telegram sent", slog.String("recipient", nationName))
+				}
+			}()
 
 			return
 		}
@@ -105,35 +119,48 @@ func main() {
 				return
 			}
 
-			nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
-			msg := strings.ReplaceAll(conf.MoveMessage, "$nation", nationLink)
-
 			if nation.WAStatus == "WA Member" {
 				go func() {
+					nationLink := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nationName, nationName)
+					msg := strings.ReplaceAll(conf.MoveMessage, "$nation", nationLink)
+
 					err = webhookClient.Send(msg)
 					if err != nil {
 						slog.Error("unable to send webhook", slog.Any("error", err))
 					}
 				}()
 
-				if conf.MoveTelegram.Secret != "" {
-					telegram := eurocore.Telegram{
-						Recipient: nationName,
-						Sender:    conf.MoveTelegram.Author,
-						Id:        conf.MoveTelegram.Id,
-						Secret:    conf.MoveTelegram.Secret,
-						Type:      "standard",
+				go func() {
+					var telegram telegrams.NewTelegram
+
+					if conf.MoveTelegram.Template != "" {
+						tmpl, err := eurocoreClient.GetTemplate(conf.MoveTelegram.Template)
+						if err != nil {
+							slog.Error("unable to retrieve template", slog.Any("error", err))
+							return
+						}
+
+						telegram = telegrams.New(tmpl.Nation, nationName, strconv.Itoa(tmpl.Tgid), tmpl.Key, telegrams.Standard)
+					} else if conf.MoveTelegram.Id != "" {
+						telegram = telegrams.New(conf.MoveTelegram.Author, nationName, conf.JoinTelegram.Id, conf.JoinTelegram.Secret, telegrams.Standard)
+					} else {
+						slog.Warn("move telegram not set, skipping")
+						return
 					}
 
-					go eurocoreClient.SendTelegram(telegram)
-				} else {
-					slog.Warn("move telegram not set, skipping")
-				}
+					err := eurocoreClient.SendTelegram(telegram)
+					if err != nil {
+						slog.Error("unable to send move telegram", slog.Any("error", err))
+					} else {
+						slog.Info("move telegram sent", slog.String("recipient", nationName))
+					}
+				}()
 			}
 
 			return
 		}
 	})
+
 	if err != nil {
 		slog.Error("unable to subscribe to happenings", slog.Any("error", err))
 	}
