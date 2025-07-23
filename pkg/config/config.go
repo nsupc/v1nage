@@ -17,9 +17,10 @@ type Eurocore struct {
 }
 
 type Telegram struct {
-	Id     string `yaml:"id"`
-	Secret string `yaml:"secret"`
-	Author string `yaml:"author"`
+	Template string `yaml:"template"`
+	Id       string `yaml:"id"`
+	Secret   string `yaml:"secret"`
+	Author   string `yaml:"author"`
 }
 
 type Webhook struct {

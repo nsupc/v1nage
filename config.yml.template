@@ -12,14 +12,16 @@ webhook:
 join-message:
 move-message:
 move-telegram:
+  template:
   id:
   secret:
   author:
 join-telegram:
+  template:
   id:
   secret:
   author:
 log:
   level:
   token:
-  endpoint: 
+  endpoint:
