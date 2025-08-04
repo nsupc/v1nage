@@ -3,8 +3,10 @@ package config
 import (
 	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	slogbetterstack "github.com/samber/slog-betterstack"
@@ -45,6 +47,7 @@ type Config struct {
 	MoveTelegram Telegram `yaml:"move-telegram"`
 	JoinTelegram Telegram `yaml:"join-telegram"`
 	Log          Log      `yaml:"log"`
+	Heartbeat    string   `yaml:"heartbeat-url"`
 }
 
 func (c *Config) initLogger() {
@@ -76,6 +79,23 @@ func (c *Config) initLogger() {
 
 	slog.SetDefault(logger)
 	slog.SetLogLoggerLevel(logLevel)
+}
+
+func (c *Config) startHeartbeat() {
+	if c.Heartbeat == "" {
+		return
+	}
+
+	ticker := time.NewTicker(30 * time.Minute)
+
+	go func() {
+		for range ticker.C {
+			_, err := http.Get(c.Heartbeat)
+			if err != nil {
+				slog.Error("heartbeat failed", slog.Any("error", err))
+			}
+		}
+	}()
 }
 
 func Read() (*Config, error) {
@@ -121,6 +141,9 @@ func Read() (*Config, error) {
 	if config.JoinMessage == "" {
 		config.JoinMessage = "$nation (joined WA)"
 	}
+
+	config.initLogger()
+	config.startHeartbeat()
 
 	return config, nil
 }
