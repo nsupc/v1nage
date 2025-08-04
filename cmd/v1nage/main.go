@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
+	"os"
 	"regexp"
 
 	"v1nage/pkg/config"
@@ -20,7 +20,8 @@ import (
 func main() {
 	conf, err := config.Read()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("failed to read config", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	joinRegex := regexp.MustCompile(`^@@(.*)@@ was admitted to the World Assembly.?$`)
