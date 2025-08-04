@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/tmaxmax/go-sse"
 )
 
@@ -23,7 +24,21 @@ func (s *SSEClient) Subscribe(url string, onEvent sse.EventCallback) error {
 
 	_ = conn.SubscribeToAll(onEvent)
 
-	err = conn.Connect()
+	err = retry.Do(
+		func() error {
+			err = conn.Connect()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		retry.DelayType(retry.BackOffDelay),
+		retry.OnRetry(func(n uint, err error) {
+			slog.Error("retrying connection", slog.Any("retry", n), slog.Any("error", err))
+		}),
+		retry.UntilSucceeded(),
+	)
 	if err != nil {
 		return err
 	}
