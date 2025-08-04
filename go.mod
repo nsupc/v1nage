@@ -8,10 +8,11 @@ require (
 	github.com/goccy/go-yaml v1.17.1
 	github.com/nsupc/eurogo v0.3.0
 	github.com/samber/slog-betterstack v1.4.2
-	github.com/tmaxmax/go-sse v0.10.0
+	github.com/tmaxmax/go-sse v0.11.0
 )
 
 require (
+	github.com/avast/retry-go/v4 v4.6.1 // indirect
 	github.com/disgoorg/json v1.2.0 // indirect
 	github.com/samber/lo v1.47.0 // indirect
 	github.com/samber/slog-common v0.18.1 // indirect
