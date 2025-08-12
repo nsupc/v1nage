@@ -1,65 +1,43 @@
 package sse
 
 import (
-	"context"
+	"encoding/json"
 	"log/slog"
-	"net/http"
 	"time"
 
-	"github.com/avast/retry-go/v4"
-	"github.com/tmaxmax/go-sse"
+	"github.com/r3labs/sse/v2"
+	"gopkg.in/cenkalti/backoff.v1"
 )
 
 type SSEClient struct {
-	client sse.Client
+	client *sse.Client
 }
 
-func (s *SSEClient) Subscribe(url string, onEvent sse.EventCallback) error {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, http.NoBody)
-	if err != nil {
-		return err
-	}
+func (s *SSEClient) Subscribe(cb func(Event)) {
+	s.client.Subscribe("messages", func(msg *sse.Event) {
+		event := Event{}
 
-	conn := s.client.NewConnection(req)
+		err := json.Unmarshal(msg.Data, &event)
+		if err != nil {
+			slog.Error("unable to unmarshal event", slog.Any("error", err))
+			return
+		}
 
-	_ = conn.SubscribeToAll(onEvent)
-
-	err = retry.Do(
-		func() error {
-			err = conn.Connect()
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
-		retry.DelayType(retry.BackOffDelay),
-		retry.OnRetry(func(n uint, err error) {
-			slog.Error("retrying connection", slog.Any("retry", n), slog.Any("error", err))
-		}),
-		retry.UntilSucceeded(),
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
+		cb(event)
+	})
 }
 
-func New() *SSEClient {
-	client := SSEClient{
-		client: sse.Client{
-			HTTPClient: &http.Client{},
-			OnRetry:    OnRetry,
-			Backoff:    sse.DefaultClient.Backoff,
-		},
+func New(url string) *SSEClient {
+	backoffStrategy := backoff.NewExponentialBackOff()
+	backoffStrategy.MaxElapsedTime = 0
+	backoffStrategy.MaxInterval = 15 * time.Minute
+
+	client := sse.NewClient(url)
+	client.ReconnectStrategy = backoffStrategy
+
+	return &SSEClient{
+		client,
 	}
-
-	return &client
-}
-
-func OnRetry(err error, duration time.Duration) {
-	slog.Error("disconnect", slog.Any("error", err), slog.Duration("retry", duration))
 }
 
 type Event struct {
