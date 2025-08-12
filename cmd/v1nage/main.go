@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"regexp"
-
 	"v1nage/pkg/config"
 	"v1nage/pkg/ns"
 	"v1nage/pkg/sse"
@@ -14,7 +12,6 @@ import (
 	"v1nage/pkg/webhook"
 
 	"github.com/nsupc/eurogo/client"
-	gsse "github.com/tmaxmax/go-sse"
 )
 
 func main() {
@@ -39,25 +36,16 @@ func main() {
 	}
 	defer webhookClient.Close()
 
-	sseClient := sse.New()
-
 	happeningsUrl := fmt.Sprintf("https://www.nationstates.net/api/region:%s", conf.Region)
 
-	err = sseClient.Subscribe(happeningsUrl, func(e gsse.Event) {
-		event := sse.Event{}
-
-		err = json.Unmarshal([]byte(e.Data), &event)
-		if err != nil {
-			slog.Error("unable to unmarshal event", slog.Any("error", err))
-			return
-		}
-
-		if updateRegex.Match([]byte(event.Text)) {
+	sseClient := sse.New(happeningsUrl)
+	sseClient.Subscribe(func(e sse.Event) {
+		if updateRegex.Match([]byte(e.Text)) {
 			go utils.HandleUpdate(webhookClient, conf.Region)
 			return
 		}
 
-		matches := joinRegex.FindStringSubmatch(event.Text)
+		matches := joinRegex.FindStringSubmatch(e.Text)
 
 		if len(matches) > 0 {
 			nationName := matches[1]
@@ -67,7 +55,7 @@ func main() {
 			return
 		}
 
-		matches = moveRegex.FindStringSubmatch(event.Text)
+		matches = moveRegex.FindStringSubmatch(e.Text)
 
 		if len(matches) > 0 {
 			nationName := matches[1]
@@ -83,8 +71,4 @@ func main() {
 			}
 		}
 	})
-
-	if err != nil {
-		slog.Error("unable to subscribe to happenings", slog.Any("error", err))
-	}
 }
