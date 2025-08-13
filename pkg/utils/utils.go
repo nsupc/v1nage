@@ -44,4 +44,6 @@ func HandleWa(wClient *webhook.WebhookClient, eClient client.Client, msg string,
 	if err != nil {
 		slog.Error("failed to send telegram", slog.Any("error", err))
 	}
+
+	slog.Info("telegram sent", slog.String("recipient", nation))
 }
