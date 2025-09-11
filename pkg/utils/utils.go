@@ -21,7 +21,7 @@ func HandleUpdate(client *webhook.WebhookClient, region string) {
 }
 
 func HandleWa(wClient *webhook.WebhookClient, eClient client.Client, msg string, nation string, tmplId string) {
-	link := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#composebutton)", nation, nation)
+	link := fmt.Sprintf("[%s](https://www.nationstates.net/nation=%s#endorse)", nation, nation)
 	msg = strings.ReplaceAll(msg, "$nation", link)
 
 	err := wClient.Send(msg)
