@@ -41,7 +41,7 @@ func New(url string) *SSEClient {
 }
 
 type Event struct {
-	Id   string  `json:"id"`
-	Time float64 `json:"time"`
-	Text string  `json:"str"`
+	Id   string `json:"id"`
+	Time string `json:"time"`
+	Text string `json:"str"`
 }
